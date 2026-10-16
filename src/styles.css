@@ -136,6 +136,7 @@ body {
   min-width: 110px;
 }
 .btn.primary:hover:not(:disabled) { background: #4d7bff; }
+.btn.icon { padding: 11px 14px; }
 
 .timer-row { min-height: 40px; display: flex; align-items: center; }
 

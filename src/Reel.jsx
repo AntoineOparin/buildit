@@ -1,4 +1,5 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+import * as sound from './sound.js'
 
 const ITEM_H = 72
 const mod = (a, n) => ((a % n) + n) % n
@@ -10,7 +11,7 @@ const easeOutBack = (t) => {
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)
 }
 
-const Reel = forwardRef(function Reel({ label, words, locked, onToggleLock }, ref) {
+const Reel = forwardRef(function Reel({ label, words, locked, onToggleLock, pitch = 1 }, ref) {
   // pos is a continuous index into an infinitely repeating word list.
   const [pos, setPos] = useState(() => Math.floor(Math.random() * words.length))
   const [speed, setSpeed] = useState(0)
@@ -26,6 +27,8 @@ const Reel = forwardRef(function Reel({ label, words, locked, onToggleLock }, re
         const t0 = performance.now()
         let lastP = start
         let lastT = t0
+        let lastSlot = start
+        let lastTickAt = 0
 
         const tick = (now) => {
           const t = Math.min(1, (now - t0) / duration)
@@ -34,6 +37,15 @@ const Reel = forwardRef(function Reel({ label, words, locked, onToggleLock }, re
           setSpeed(Math.abs(p - lastP) / dt) // items per ms
           lastP = p
           lastT = now
+          // Click each time a word crosses the center (capped so fast spins don't buzz).
+          const slot = Math.round(p)
+          if (slot !== lastSlot) {
+            lastSlot = slot
+            if (now - lastTickAt > 45) {
+              sound.tick(pitch)
+              lastTickAt = now
+            }
+          }
           posRef.current = p
           setPos(p)
           if (t < 1) {
@@ -42,6 +54,7 @@ const Reel = forwardRef(function Reel({ label, words, locked, onToggleLock }, re
             posRef.current = target
             setPos(target)
             setSpeed(0)
+            sound.stop(pitch)
             resolve(words[mod(target, words.length)])
           }
         }

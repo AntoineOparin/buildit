@@ -8,7 +8,7 @@ export const CATEGORIES = [
 ]
 
 export const AUDIENCES = [
-  'basketball', 'skateboarding', 'nurses', 'students', 'retirees', 'new parents',
+  'basketball players', 'skaters', 'volleyball teams', 'nurses', 'students', 'retirees', 'new parents',
   'truck drivers', 'teachers', 'gamers', 'farmers', 'chefs', 'musicians',
   'freelancers', 'dog owners', 'runners', 'surfers', 'artists', 'nomads',
   'teens', 'landlords', 'plumbers', 'climbers', 'twins', 'introverts',

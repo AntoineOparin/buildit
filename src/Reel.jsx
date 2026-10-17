@@ -1,7 +1,6 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import * as sound from './sound.js'
 
-const ITEM_H = 72
 const mod = (a, n) => ((a % n) + n) % n
 
 // Ease-out with a tiny overshoot so the reel "settles" like a slot machine.
@@ -65,13 +64,10 @@ const Reel = forwardRef(function Reel({ label, words, locked, onToggleLock, pitc
   }))
 
   // Motion blur + vertical ghosting scale with speed.
-  const blur = Math.min(speed * 60, 5)
-  const ghost = Math.min(speed * 260, 26)
-  const glow = 'rgba(160, 200, 255, 0.85)'
+  const blur = Math.min(speed * 40, 3)
+  const ghost = Math.min(speed * 180, 18)
   const textShadow =
-    ghost > 0.5
-      ? `0 ${-ghost}px 2px rgba(160,200,255,.35), 0 ${-ghost / 2}px 1px rgba(160,200,255,.55), 0 ${ghost / 2}px 1px rgba(160,200,255,.55), 0 ${ghost}px 2px rgba(160,200,255,.35), 0 0 18px ${glow}`
-      : `0 0 18px ${glow}`
+    ghost > 0.5 ? `0 ${-ghost}px 1px rgba(17,17,17,.18), 0 ${ghost}px 1px rgba(17,17,17,.18)` : 'none'
 
   const base = Math.floor(pos)
   const items = []
@@ -83,9 +79,10 @@ const Reel = forwardRef(function Reel({ label, words, locked, onToggleLock, pitc
         key={i}
         className="reel-item"
         style={{
-          transform: `translateY(${offset * ITEM_H}px) scale(${1 - Math.min(dist, 2) * 0.12})`,
-          opacity: Math.max(0, 1 - dist * 0.55),
-          filter: `blur(${blur + dist * 1.2}px)`,
+          transform: `translateY(calc(${offset} * var(--item-h))) scale(${1 - Math.min(dist, 2) * 0.12})`,
+          '--len': Math.max(words[mod(i, words.length)].length, 8),
+          opacity: Math.max(0, 1 - dist * 0.7),
+          filter: blur > 0.1 ? `blur(${blur}px)` : 'none',
           textShadow,
         }}
       >
@@ -104,10 +101,10 @@ const Reel = forwardRef(function Reel({ label, words, locked, onToggleLock, pitc
           title={locked ? 'Unlock' : 'Lock this reel'}
           aria-pressed={locked}
         >
-          {locked ? '🔒' : '🔓'}
+          {locked ? 'Locked' : 'Lock'}
         </button>
       </div>
-      <div className="reel-window" style={{ height: ITEM_H * 3 }}>
+      <div className="reel-window">
         {items}
       </div>
     </div>

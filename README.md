@@ -32,7 +32,8 @@ npm run preview   # serves the built app at http://localhost:4173
 | | |
 |---|---|
 | **Spin** | Click **Spin** or press **Space**. Both reels spin, and the audience reel stops a little after the category reel. |
-| **Lock a reel** | Click the 🔒 next to a reel's label to keep its word. Spin again to change only the other reel. |
+| **Lock a reel** | Click **Lock** next to a reel's label to keep its word. Spin again to change only the other reel. |
+| **Brainstorm with AI** | After a spin, click **Copy AI prompt**. It copies a brainstorming prompt with the category, the audience and their notes. Paste it into any AI chat. |
 | **Timer** | Pick 15, 30 or 60 min and click **Start timer**. You can pause, resume or reset it. |
 | **History** | Your last 6 combinations appear as tags under the controls. |
 
@@ -49,6 +50,10 @@ npm run preview   # serves the built app at http://localhost:4173
 **A result, with history**
 
 ![Result](docs/result.png)
+
+**AI prompt copied**
+
+![Prompt](docs/prompt.png)
 
 **Timer running**
 

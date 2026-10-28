@@ -37,6 +37,41 @@ function Aspects({ side, title, word, items, hidden }) {
   )
 }
 
+function buildPrompt(cat, aud) {
+  const list = (items) => items.map((a) => `- ${a}`).join('\n')
+  return `I'm brainstorming an app idea that combines the category "${cat}" with the target audience "${aud}".
+
+Things the category "${cat}" can involve:
+${list(CATEGORY_ASPECTS[cat] ?? [])}
+
+Things to keep in mind about "${aud}":
+${list(AUDIENCE_ASPECTS[aud] ?? [])}
+
+Help me brainstorm:
+1. Give me 5 distinct app ideas for this combination, each with a one-line pitch.
+2. For each, name the core problem it solves for ${aud} and why existing tools fall short.
+3. Point out which ideas could use hardware or sensors, and which are pure software.
+4. Pick the most promising idea and outline a small first version I could build in a weekend.
+
+Ask me questions if anything would help you sharpen the ideas.`
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    // Clipboard API is unavailable outside secure contexts; fall back to execCommand.
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    ta.remove()
+  }
+}
+
 const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
 export default function App() {
@@ -46,6 +81,7 @@ export default function App() {
   const [locks, setLocks] = useState({ cat: false, aud: false })
   const [history, setHistory] = useState([])
   const [muted, setMuted] = useState(sound.isMuted)
+  const [copied, setCopied] = useState(false)
 
   const [minutes, setMinutes] = useState(30)
   const [remaining, setRemaining] = useState(null) // seconds; null = timer not started
@@ -122,6 +158,12 @@ export default function App() {
   }
 
   const last = history[0]
+
+  const copyPrompt = async () => {
+    await copyText(buildPrompt(last.cat, last.aud))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
 
   const timerLabel =
     remaining === null || remaining === 0 ? 'Start timer' : running ? 'Pause' : 'Resume'
@@ -207,6 +249,12 @@ export default function App() {
           items={AUDIENCE_ASPECTS[last?.aud] ?? []}
           hidden={spinning && !locks.aud}
         />
+      </div>
+
+      <div className="prompt-row">
+        <button className="btn" onClick={copyPrompt} disabled={!last || spinning}>
+          {copied ? 'Copied!' : 'Copy AI prompt'}
+        </button>
       </div>
 
       <ul className="history" aria-label="Recent spins">

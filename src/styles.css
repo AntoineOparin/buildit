@@ -300,6 +300,10 @@ button { font: inherit; color: inherit; }
 }
 .empty li:nth-child(even)::after { width: 42%; }
 
+/* Prompt */
+
+.prompt-row { display: flex; justify-content: center; }
+
 /* History */
 
 .history {

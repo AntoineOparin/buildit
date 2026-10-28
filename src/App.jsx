@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Reel from './Reel.jsx'
-import { CATEGORIES, AUDIENCES, CATEGORY_ASPECTS, AUDIENCE_ASPECTS } from './words.js'
+import { BUSINESSES, WORKFLOWS, ANGLES, BUSINESS_FACTS, FACT_LABELS, WORKFLOW_ASPECTS } from './words.js'
 import * as sound from './sound.js'
 
 const DURATIONS = [15, 30, 60]
 
-function Aspects({ side, title, word, items, hidden }) {
+const businessFacts = (biz) =>
+  Object.entries(FACT_LABELS).map(([key, label]) => ({ label, text: BUSINESS_FACTS[biz]?.[key] }))
+
+// items are plain strings, or { label, text } pairs for labeled facts.
+function Aspects({ side, title, word, items, rows, note, hidden }) {
   return (
     <aside className={`panel aspects ${side} ${hidden ? 'hidden' : ''}`} aria-live="polite">
       <h2 className="panel-head">{title}</h2>
@@ -14,19 +18,27 @@ function Aspects({ side, title, word, items, hidden }) {
           <div key={word}>
             <h3>{word}</h3>
             <ul>
-              {items.map((a, i) => (
-                <li key={a} style={{ '--i': i }}>
-                  {a}
-                </li>
-              ))}
+              {items.map((a, i) =>
+                typeof a === 'string' ? (
+                  <li key={a} style={{ '--i': i }}>
+                    {a}
+                  </li>
+                ) : (
+                  <li key={a.label} className="fact" style={{ '--i': i }}>
+                    <span className="fact-label">{a.label}</span>
+                    {a.text}
+                  </li>
+                ),
+              )}
             </ul>
+            {note && <p className="note">{note}</p>}
           </div>
         ) : (
           // Same shape as a filled list so the first spin doesn't shift the layout.
           <div className="empty">
             <h3>Spin to start</h3>
             <ul aria-hidden="true">
-              {Array.from({ length: 6 }, (_, i) => (
+              {Array.from({ length: rows }, (_, i) => (
                 <li key={i} />
               ))}
             </ul>
@@ -37,23 +49,28 @@ function Aspects({ side, title, word, items, hidden }) {
   )
 }
 
-function buildPrompt(cat, aud) {
+function buildPrompt(biz, flow, angle) {
   const list = (items) => items.map((a) => `- ${a}`).join('\n')
-  return `I'm brainstorming an app idea that combines the category "${cat}" with the target audience "${aud}".
+  const facts = businessFacts(biz).map((f) => `${f.label}: ${f.text}`)
+  return `I'm exploring a B2B SaaS idea: software for ${biz} that handles ${flow}, with this angle: "${angle}".
 
-Things the category "${cat}" can involve:
-${list(CATEGORY_ASPECTS[cat] ?? [])}
+My rough notes on ${biz} (correct anything that's wrong):
+${list(facts)}
 
-Things to keep in mind about "${aud}":
-${list(AUDIENCE_ASPECTS[aud] ?? [])}
+Common problems with ${flow}:
+${list(WORKFLOW_ASPECTS[flow] ?? [])}
 
-Help me brainstorm:
-1. Give me 5 distinct app ideas for this combination, each with a one-line pitch.
-2. For each, name the core problem it solves for ${aud} and why existing tools fall short.
-3. Point out which ideas could use hardware or sensors, and which are pure software.
-4. Pick the most promising idea and outline a small first version I could build in a weekend.
+Help me judge whether this could become a profitable SaaS:
+1. Describe the exact customer (business size, who signs off on buying) and the painful moment that makes them look for a fix.
+2. Estimate how many of these businesses exist in my market, a realistic monthly price, and what revenue looks like at 100 and 1,000 customers.
+3. List existing competitors, including spreadsheets and general tools, and where they fall short for this niche.
+4. Explain how "${angle}" could make the product clearly better, or say if it doesn't fit.
+5. Describe the smallest version a business would pay for in its first month.
+6. Suggest how to find and sign the first 10 paying customers.
+7. Give me 5 non-leading questions to ask owners in customer interviews.
+8. Name the biggest risks and the signals that would mean it's not worth building.
 
-Ask me questions if anything would help you sharpen the ideas.`
+Be blunt. If the idea is weak, say so and suggest a stronger nearby niche or workflow. Ask me which country I'm targeting if it matters.`
 }
 
 async function copyText(text) {
@@ -75,10 +92,11 @@ async function copyText(text) {
 const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
 export default function App() {
-  const catRef = useRef(null)
-  const audRef = useRef(null)
+  const bizRef = useRef(null)
+  const flowRef = useRef(null)
+  const angleRef = useRef(null)
   const [spinning, setSpinning] = useState(false)
-  const [locks, setLocks] = useState({ cat: false, aud: false })
+  const [locks, setLocks] = useState({ biz: false, flow: false, angle: false })
   const [history, setHistory] = useState([])
   const [muted, setMuted] = useState(sound.isMuted)
   const [copied, setCopied] = useState(false)
@@ -87,15 +105,18 @@ export default function App() {
   const [remaining, setRemaining] = useState(null) // seconds; null = timer not started
   const [running, setRunning] = useState(false)
 
+  const toggleLock = (key) => setLocks((l) => ({ ...l, [key]: !l[key] }))
+
   const spin = useCallback(async () => {
     if (spinning) return
     setSpinning(true)
     sound.unlock()
-    const [cat, aud] = await Promise.all([
-      locks.cat ? catRef.current.current() : catRef.current.spin(2400),
-      locks.aud ? audRef.current.current() : audRef.current.spin(3100),
+    const [biz, flow, angle] = await Promise.all([
+      locks.biz ? bizRef.current.current() : bizRef.current.spin(2400),
+      locks.flow ? flowRef.current.current() : flowRef.current.spin(3000),
+      locks.angle ? angleRef.current.current() : angleRef.current.spin(3500),
     ])
-    setHistory((h) => [{ cat, aud, id: Date.now() }, ...h].slice(0, 6))
+    setHistory((h) => [{ biz, flow, angle, id: Date.now() }, ...h].slice(0, 6))
     sound.win()
     setSpinning(false)
   }, [spinning, locks])
@@ -160,7 +181,7 @@ export default function App() {
   const last = history[0]
 
   const copyPrompt = async () => {
-    await copyText(buildPrompt(last.cat, last.aud))
+    await copyText(buildPrompt(last.biz, last.flow, last.angle))
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
@@ -172,7 +193,7 @@ export default function App() {
     <main className="page">
       <header className="topbar">
         <h1 className="title">BUILD IT</h1>
-        <span className="tag">// idea spinner</span>
+        <span className="tag">// saas idea spinner</span>
         <button
           className="btn sound"
           onClick={toggleMute}
@@ -186,31 +207,43 @@ export default function App() {
       <div className="stage">
         <Aspects
           side="left"
-          title="Category notes"
-          word={last?.cat}
-          items={CATEGORY_ASPECTS[last?.cat] ?? []}
-          hidden={spinning && !locks.cat}
+          title="Business notes"
+          word={last?.biz}
+          items={last ? businessFacts(last.biz) : []}
+          rows={5}
+          note="Rough guide, check before relying on it."
+          hidden={spinning && !locks.biz}
         />
         <section className="panel machine">
           <h2 className="panel-head">Spinner</h2>
           <div className="reels">
             <Reel
-              ref={catRef}
-              label="App category"
-              words={CATEGORIES}
+              ref={bizRef}
+              label="Business type"
+              words={BUSINESSES}
               pitch={1}
-              locked={locks.cat}
-              onToggleLock={() => setLocks((l) => ({ ...l, cat: !l.cat }))}
+              locked={locks.biz}
+              onToggleLock={() => toggleLock('biz')}
             />
             <div className="plus">+</div>
             <Reel
-              ref={audRef}
-              label="Target audience"
-              words={AUDIENCES}
+              ref={flowRef}
+              label="Painful workflow"
+              words={WORKFLOWS}
               pitch={0.8}
-              locked={locks.aud}
-              onToggleLock={() => setLocks((l) => ({ ...l, aud: !l.aud }))}
+              locked={locks.flow}
+              onToggleLock={() => toggleLock('flow')}
             />
+            <div className="angle">
+              <Reel
+                ref={angleRef}
+                label="Angle"
+                words={ANGLES}
+                pitch={1.25}
+                locked={locks.angle}
+                onToggleLock={() => toggleLock('angle')}
+              />
+            </div>
           </div>
           <div className="controls">
             <button className="btn primary" onClick={spin} disabled={spinning}>
@@ -244,10 +277,11 @@ export default function App() {
         </section>
         <Aspects
           side="right"
-          title="Audience notes"
-          word={last?.aud}
-          items={AUDIENCE_ASPECTS[last?.aud] ?? []}
-          hidden={spinning && !locks.aud}
+          title="Workflow notes"
+          word={last?.flow}
+          items={WORKFLOW_ASPECTS[last?.flow] ?? []}
+          rows={6}
+          hidden={spinning && !locks.flow}
         />
       </div>
 
@@ -261,7 +295,7 @@ export default function App() {
         {history.length === 0 && <li className="placeholder">No spins yet</li>}
         {history.map((h) => (
           <li key={h.id}>
-            {h.cat} <span>+</span> {h.aud}
+            {h.biz} <span>+</span> {h.flow}
           </li>
         ))}
       </ul>

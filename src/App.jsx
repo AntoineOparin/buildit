@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Reel from './Reel.jsx'
-import { BUSINESSES, WORKFLOWS, ANGLES, BUSINESS_FACTS, FACT_LABELS, WORKFLOW_ASPECTS } from './words.js'
+import { BUSINESSES, WORKFLOWS, BUSINESS_FACTS, FACT_LABELS, WORKFLOW_ASPECTS } from './words.js'
 import * as sound from './sound.js'
 
 const DURATIONS = [15, 30, 60]
@@ -49,10 +49,10 @@ function Aspects({ side, title, word, items, rows, note, hidden }) {
   )
 }
 
-function buildPrompt(biz, flow, angle) {
+function buildPrompt(biz, flow) {
   const list = (items) => items.map((a) => `- ${a}`).join('\n')
   const facts = businessFacts(biz).map((f) => `${f.label}: ${f.text}`)
-  return `I'm exploring a B2B SaaS idea: software for ${biz} that handles ${flow}, with this angle: "${angle}".
+  return `I'm exploring a B2B SaaS idea for the US and Canada: software for ${biz} that handles ${flow}.
 
 My rough notes on ${biz} (correct anything that's wrong):
 ${list(facts)}
@@ -62,15 +62,15 @@ ${list(WORKFLOW_ASPECTS[flow] ?? [])}
 
 Help me judge whether this could become a profitable SaaS:
 1. Describe the exact customer (business size, who signs off on buying) and the painful moment that makes them look for a fix.
-2. Estimate how many of these businesses exist in my market, a realistic monthly price, and what revenue looks like at 100 and 1,000 customers.
-3. List existing competitors, including spreadsheets and general tools, and where they fall short for this niche.
-4. Explain how "${angle}" could make the product clearly better, or say if it doesn't fit.
+2. Estimate how many of these businesses exist in the US and Canada, a realistic monthly price in USD and CAD, and what revenue looks like at 100 and 1,000 customers.
+3. List existing competitors in North America, including spreadsheets and general tools, and where they fall short for this niche.
+4. Suggest the 2–3 angles that would make this product clearly win over what they use today (for example: replaces paper forms, works offline on site, runs over text message, AI does the paperwork, syncs with QuickBooks, English and French out of the box, priced per job instead of per seat).
 5. Describe the smallest version a business would pay for in its first month.
 6. Suggest how to find and sign the first 10 paying customers.
 7. Give me 5 non-leading questions to ask owners in customer interviews.
 8. Name the biggest risks and the signals that would mean it's not worth building.
 
-Be blunt. If the idea is weak, say so and suggest a stronger nearby niche or workflow. Ask me which country I'm targeting if it matters.`
+Point out any US vs Canada differences that matter (regulations, payments, French in Quebec). Be blunt. If the idea is weak, say so and suggest a stronger nearby niche or workflow.`
 }
 
 async function copyText(text) {
@@ -94,9 +94,8 @@ const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 
 export default function App() {
   const bizRef = useRef(null)
   const flowRef = useRef(null)
-  const angleRef = useRef(null)
   const [spinning, setSpinning] = useState(false)
-  const [locks, setLocks] = useState({ biz: false, flow: false, angle: false })
+  const [locks, setLocks] = useState({ biz: false, flow: false })
   const [history, setHistory] = useState([])
   const [muted, setMuted] = useState(sound.isMuted)
   const [copied, setCopied] = useState(false)
@@ -111,12 +110,11 @@ export default function App() {
     if (spinning) return
     setSpinning(true)
     sound.unlock()
-    const [biz, flow, angle] = await Promise.all([
+    const [biz, flow] = await Promise.all([
       locks.biz ? bizRef.current.current() : bizRef.current.spin(2400),
-      locks.flow ? flowRef.current.current() : flowRef.current.spin(3000),
-      locks.angle ? angleRef.current.current() : angleRef.current.spin(3500),
+      locks.flow ? flowRef.current.current() : flowRef.current.spin(3100),
     ])
-    setHistory((h) => [{ biz, flow, angle, id: Date.now() }, ...h].slice(0, 6))
+    setHistory((h) => [{ biz, flow, id: Date.now() }, ...h].slice(0, 6))
     sound.win()
     setSpinning(false)
   }, [spinning, locks])
@@ -181,7 +179,7 @@ export default function App() {
   const last = history[0]
 
   const copyPrompt = async () => {
-    await copyText(buildPrompt(last.biz, last.flow, last.angle))
+    await copyText(buildPrompt(last.biz, last.flow))
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
@@ -234,16 +232,6 @@ export default function App() {
               locked={locks.flow}
               onToggleLock={() => toggleLock('flow')}
             />
-            <div className="angle">
-              <Reel
-                ref={angleRef}
-                label="Angle"
-                words={ANGLES}
-                pitch={1.25}
-                locked={locks.angle}
-                onToggleLock={() => toggleLock('angle')}
-              />
-            </div>
           </div>
           <div className="controls">
             <button className="btn primary" onClick={spin} disabled={spinning}>

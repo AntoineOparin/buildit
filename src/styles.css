@@ -10,7 +10,7 @@
   --amber: #b86e00;
   --shadow: 3px 3px 0 var(--ink);
   /* Reel row height; everything in the spinner scales from it. */
-  --item-h: clamp(56px, 8dvh, 104px);
+  --item-h: clamp(60px, 10dvh, 120px);
 
   --font-display: 'DM Serif Display', Georgia, serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
@@ -151,7 +151,7 @@ button { font: inherit; color: inherit; }
 
 .reel-window {
   position: relative;
-  height: calc(var(--item-h) * var(--rows, 3));
+  height: calc(var(--item-h) * 3);
   container-type: inline-size;
   overflow: hidden;
   background: var(--sheet);
@@ -163,7 +163,7 @@ button { font: inherit; color: inherit; }
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(var(--item-h) * (var(--rows, 3) - 1) / 2);
+  top: var(--item-h);
   height: var(--item-h);
   line-height: var(--item-h);
   padding: 0 10px;
@@ -184,10 +184,6 @@ button { font: inherit; color: inherit; }
   font-size: 30px;
   color: var(--muted);
 }
-
-/* The angle is a shorter, full-width reel under the main two. */
-.angle { grid-column: 1 / -1; }
-.angle .reel { --item-h: clamp(44px, 6dvh, 68px); --rows: 1; }
 
 /* Controls */
 
